@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+    <script src="angular/angular.js"></script>
+    <style>
+      h1{
+        margin-bottom: 50px;
+      }
+      fieldset{
+        padding: 20px;
+      }
+      ul{
+        padding: 0;
+      }
+      li{
+        list-style-type: none;
+        margin:10px;
+      }
+      .display{
+        display: none;
+      }
+
+
+    </style>
+    <script>
+
+        angular.module('myApp',[]).controller('myController',function($scope,Contact){
+
+            $scope.contact = {};
+            $scope.search = {};
+
+            $scope.createContact = function(){
+              Contact.post($scope.contact).success(function(data){
+                console.log(data);
+                $scope.contact = {};
+              });
+            }
+
+            $scope.getContacts = function(){
+              Contact.get().success(function (data) {
+                console.log(data);
+                if(data !== null && data.length>0){
+
+                  $scope.contacts = data;
+                }
+              })
+            }
+
+            $scope.updateContact = function(indiv){
+
+              indiv.disable = indiv.disable ? false : true;
+              if(indiv.state === 'Edit'){
+                indiv.state = 'Update';
+              }else{
+                indiv.state = 'Edit';
+                Contact.put(indiv).success(function (data) {
+                  console.log(data);
+                })
+              }
+            }
+
+            $scope.deleteContact = function(indiv){
+              if(confirm('Are u sure to delete the contact?')){
+                Contact.delete(indiv._id).success(function (data) {
+                  console.log(data);
+                  indiv.delete = true;
+                });
+
+              }
+            }
+
+
+
+        }).factory('Contact',function($http){
+            return {
+              post:function(contact_object){
+                return $http.post('/contacts',contact_object);
+              },
+              get:function(){
+                return $http.get('/contacts',{headers:{accept:'application/json'}});
+              },
+              put:function(contact_object){
+                return $http.put('/contacts/'+contact_object._id,contact_object);
+              },
+              delete:function(id){
+                return $http.delete('/contacts/'+id);
+              }
+            }
+        });
+
+    </script>
+  </head>
+  <body >
+    <h1><%= title %></h1>
+
+    <section>
+      <form ng-controller="myController">
+        <fieldset>
+          <legend>Create Contact</legend>
+          <label for="name">Name:</label>
+          <input id="name" type="text" ng-model="contact.name">&nbsp;&nbsp;
+          <label for="email">Email:</label>
+          <input id="email" type="email" ng-model="contact.email">&nbsp;&nbsp;
+          <label for="phone">Phone:</label>
+          <input id="phone" type="tel" ng-model="contact.phone">&nbsp;&nbsp;
+          <input type="button" value="create" ng-click="createContact()">
+
+        </fieldset><br>
+        <fieldset>
+          <legend>Show Contact</legend>
+          <label for="searname">name:</label>
+          <input id="searname" type="text" ng-model="search.name"> or
+          <label for="searemail">email:</label>
+          <input id="searemail" type="email" ng-model="search.email">&nbsp;&nbsp;
+          <input type="button" value="search" ng-click="getContacts()">
+          <ul>
+            <li ng-repeat="indiv in contacts | filter:{name:search.name,email:search.email}" ng-init="indiv.state='Edit'" ng-class="{display:indiv.delete}">
+              <input type="text" ng-model="indiv.name" ng-disabled="!indiv.disable">
+              <input type="email" ng-model="indiv.email" ng-disabled="!indiv.disable">
+              <input type="tel" ng-model="indiv.phone" ng-disabled="!indiv.disable">
+              <input type="button" value="{{indiv.state}}" ng-click="updateContact(indiv)">
+              <input type="button" value="delete" ng-click="deleteContact(indiv)">
+            </li>
+          </ul>
+        </fieldset>
+      </form>
+    </section>
+  </body>
+</html>
